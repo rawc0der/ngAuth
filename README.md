@@ -3,15 +3,14 @@ ngAuth
 
 ngAuthorize - an Authorization and Access Control Service, used for authorizing ui-router states
 
-> Use as a parent state for all Autorization required states
-> Define groups of autorized roles in UserRoles service
-> Save user session data 
+' Use as a parent state for all Autorization required states
+' Define groups of autorized roles in UserRoles service
+' Save user session data 
 
 ui-router (state config)
 ------------------------
 ```
 angular.module('rawc0der.auth', [
-  'ui.router'
   'rawc0der.example.controllers.AuthController'
 ]).config ($stateProvider) ->
   $stateProvider

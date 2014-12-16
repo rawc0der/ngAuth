@@ -9,6 +9,7 @@ Save user session data
 
 ui-router (state config)
 ------------------------
+<pre>
 ```
 angular.module('rawc0der.auth', [
   'ui.router'
@@ -35,5 +36,6 @@ angular.module('rawc0der.example', [
       data:
         access_group: 'all'
 
-      ....
+
 ```
+</pre>

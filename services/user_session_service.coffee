@@ -7,10 +7,12 @@
 # Retrieve user details from getter methods
 ###
 angular.module('rawc0der.common.ngAuth.services.UserSessionService', [])
-  .service 'UserSession', ['$q', ($q) ->
+  .service 'UserSession', ['$q', '$http', '$interval', ($q, $http, $interval) ->
     _user: null
     _authorizedAssets: null
+    _keepAliveInterval: null
     setSessionData: (user) ->
+      @_setKeepAliveInterval(user)
       @_user = user
       @_authorizedAssets =
         name: user.userGroup?.organisation.orgName
@@ -35,4 +37,8 @@ angular.module('rawc0der.common.ngAuth.services.UserSessionService', [])
       @_user.numberFormatConfig.decimalSeparator
     getGroupingFormat: ->
       @_user.numberFormatConfig.groupingSeparator
+    _setKeepAliveInterval: (user) ->
+      if user.sessionNeverExpires then $interval @_keepAliveAction, 600000
+    _keepAliveAction: ->
+      $http.get('/api/keep-alive')
   ]

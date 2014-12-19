@@ -9,7 +9,7 @@
  #  - obtain admin status by authorizing the current user
 ###
 angular.module('rawc0der.common.ngAuth.services.AuthorizationService', [])
-  .factory 'AuthService', ['$http', '$q', 'UserSession', 'AccessManager','$rootScope', ($http, $q, UserSession, AccessManager, $rootScope) ->
+  .factory 'AuthService', ['$http', '$q', 'UserSession', 'AccessManager','$rootScope', '$window', '$timeout', ($http, $q, UserSession, AccessManager, $rootScope, $window, $timeout) ->
     _errors: null
     _isLoggedIn: false
     _isAdmin: (role) ->
@@ -57,33 +57,46 @@ angular.module('rawc0der.common.ngAuth.services.AuthorizationService', [])
      # # Options object passed in when calling the authorization request
     ###
     init: ->
+      @_deferred = $q.defer()
       $rootScope.$on 'refresh:session', (e, data) ->
         if data.userData?
           UserSession.setSessionData(data.userData)
           $rootScope.$broadcast 'refresh:user:data'
 
-    logout: ->
-      $http.get('/logout').success (res) =>
-        @_isLoggedIn = false
-        UserSession.endSession()
+    _logoutAction: =>
+      @_isLoggedIn = false
+      UserSession.endSession()
+      $window.location.href = $window.location.origin + "/logout"
+
+    logout: ->$timeout @_logoutAction, 500
+
+    refreshUserSession: ->
+      @_refreshDeferred = $q.defer()
+      $http.get('/api/users/current')
+        .success (userResponse) =>
+          UserSession.setSessionData(userResponse)
+          @_refreshDeferred.resolve UserSession.getSessionData()
+        .error (err) ->
+          @_refreshDeferred.reject err
+      @_refreshDeferred.promise
 
     authorize: (opts) ->
-      @_deferred = $q.defer()
-      if @_isLoggedIn 
-        @_deferred.resolve UserSession.getSessionData()
-      else
-        $http.get('/api/users/current')
-          .success (userResponse) =>
-            @_authorizeUserCredentials userResponse, opts?.group
-          .error (err) ->
-            @_deferred.reject err
+      $http.get('/api/users/current')
+        .success (userResponse) =>
+          @_authorizeUserCredentials userResponse, opts?.group
+        .error (err) ->
+          @_deferred.reject err
       @_deferred.promise
+
+    hasViewPermission: (group, role) ->
+      @_isAuthotizedRole group, role ? UserSession.getRole()
+    
     hasPermission: (group, role) ->
-      cb = => @_isAuthotizedRole group, role ? UserSession.getRole()
-      if @_isLoggedIn 
-        cb() 
-      else 
-        @authorize(group:group).then cb
+      _permissionDeffered = $q.defer()
+      @_deferred.promise.then =>
+        _permissionDeffered.resolve( @_isAuthotizedRole group, role ? UserSession.getRole() )
+      _permissionDeffered.promise
+      
     getLastError: ->
       _.clone @_errors
   ]
